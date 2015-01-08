@@ -1,9 +1,9 @@
 ;;;; 1forms.asd
 
 (asdf:defsystem #:1forms
-  :description "Describe 1forms here"
-  :author "Your Name <your.name@example.com>"
-  :license "Specify license here"
+  :description "Web forms generator"
+  :author "Timofei Shatrov <timofei.shatrov@gmail.com>"
+  :license "MIT"
   :depends-on (#:cl-markup
                #:cl-emb
                #:cl-ppcre)
