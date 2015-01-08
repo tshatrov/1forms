@@ -1,0 +1,16 @@
+<% @loop errors %>
+<small class="error">
+    <% @var error -escape html %>
+</small>
+<% @endloop %>
+<% @loop allfields %>
+<div class="row">
+    <% @var label %>
+    <% @loop errors %>
+    <small class="error">
+        <% @var error -escape html %>
+    </small>
+    <% @endloop %>
+    <% @var field %>
+</div>
+<% @endloop %>
