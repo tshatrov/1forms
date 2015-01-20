@@ -101,6 +101,7 @@
 (defclass form ()
   ((fields :initarg :fields :initform nil :reader form-fields)
    (initials :initarg :init :initform nil :reader form-initials)
+   (vars :initform nil :initarg :vars :accessor form-vars)
    (errors :initform nil :reader form-errors)
    (data :initform nil :accessor form-data)
    (boundp :initform nil :accessor form-boundp)

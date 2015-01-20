@@ -28,4 +28,5 @@
    :process-form
    :bind-form
    :*form-template-directory*
-   :*default-form-template*))
+   :*default-form-template*
+   :form-vars))
