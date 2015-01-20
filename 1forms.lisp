@@ -141,7 +141,8 @@
   (form-errors form))
 
 (defmacro process-form (form on-error &body on-success)
-  `(cond ((full-validate ,form) ,on-error)
+  `(cond ((or (not (form-boundp form)) (full-validate ,form))
+          ,on-error)
          (t ,@on-success)))
 
 (defmacro def-form (class-name superclasses
