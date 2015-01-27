@@ -1,7 +1,7 @@
 ;;;; package.lisp
 
 (defpackage 1forms
-  (:use :cl :cl-markup)
+  (:use :cl :alexandria :cl-markup)
   (:export
    :field-error
    :field-error-field
@@ -29,4 +29,6 @@
    :bind-form
    :*form-template-directory*
    :*default-form-template*
-   :form-vars))
+   :form-vars
+   :select-field
+   :select-choices))

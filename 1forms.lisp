@@ -98,6 +98,29 @@
 (defmethod to-lisp ((field string-field))
   (field-str field))
 
+(defclass select-field (field)
+  ((prefix :initform "select")
+   (disabled :initarg :disabled :initform nil :reader input-disabled)
+   (extra :initarg :extra :initform nil :reader input-extra)
+   (choices :initarg :choices :initform (list "" "--") :reader select-choices)
+   ))
+
+(defmethod input-attrs append ((field select-field))
+  (list* :id (get-field-id field)
+         :name (field-name field)
+         :disabled (input-disabled field)
+         (input-extra field)))
+
+(defmethod render-field ((field select-field) &key value)
+  (loop for (cval text) in (select-choices field)
+       for opt-tag = (list* :option :value cval (when (equal cval value) (list :selected "t")))
+       collect opt-tag into opts
+       finally
+       (return (write-tag `(:select ,@(get-input-attrs field) ,@opts)))))
+
+(defmethod to-lisp ((field select-field))
+  (unless (emptyp (field-str field)) (field-str field)))
+
 (defclass form ()
   ((fields :initarg :fields :initform nil :reader form-fields)
    (initials :initarg :init :initform nil :reader form-initials)
