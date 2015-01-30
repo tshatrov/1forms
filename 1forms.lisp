@@ -135,6 +135,11 @@
   (:method ((form form))
     nil))
 
+(defgeneric finalize (form)
+  (:documentation "perform some action associated with form or raise field-error")
+  (:method ((form form))
+    nil))
+
 (defun full-validate (form)
   "Returns nil when no errors."
   ;; validate fields
@@ -156,7 +161,7 @@
     (return-from full-validate (form-errors form)))
   ;;validate the whole form
   (handler-case
-      (validate form)
+      (progn (validate form) (finalize form))
     (field-error (e)
       (with-slots (field message) e
         (with-slots (errors) form
@@ -187,7 +192,8 @@
               (return
                 `((setf (slot-value form 'initials) (append (slot-value form 'initials)
                                                             (list ,@initials)))
-                  (setf (slot-value form 'fields) (list ,@fields))))))))
+                  (setf (slot-value form 'fields) (append (slot-value form 'fields)
+                                                          (list ,@fields)))))))))
               
 (defun form-to-plist (form &aux all-fields (err-map (make-hash-table)))
   (loop for (field err) on (form-errors form) by #'cddr

@@ -29,7 +29,7 @@ Example of form definition:
           :name "email"
           :label "Email"))
 
-(defmethod validate :after ((form register-form))
+(defmethod finalize ((form register-form))
   (let ((data (form-data form)))
     (create-user
      (getf data :login)

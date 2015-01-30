@@ -31,4 +31,5 @@
    :*default-form-template*
    :form-vars
    :select-field
-   :select-choices))
+   :select-choices
+   :finalize))
