@@ -95,6 +95,9 @@
 (defclass password-field (string-field)
   ((type :initform "password")))
 
+(defclass hidden-field (string-field)
+  ((type :initform "hidden")))
+
 (defmethod to-lisp ((field string-field))
   (field-str field))
 
@@ -187,7 +190,7 @@
             for initial = (getf options :initial :none)
             unless (eql initial :none)
               append (list kw initial) into initials
-            append (list kw `(make-instance ',class ,@options)) into fields
+            append (list kw `(make-instance ',class ,@options :allow-other-keys t)) into fields
             finally
               (return
                 `((setf (slot-value form 'initials) (append (slot-value form 'initials)

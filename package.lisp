@@ -32,4 +32,5 @@
    :form-vars
    :select-field
    :select-choices
-   :finalize))
+   :finalize
+   :hidden-field))
