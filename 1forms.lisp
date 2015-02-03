@@ -116,7 +116,8 @@
 
 (defmethod render-field ((field select-field) &key value)
   (loop for (cval text) in (select-choices field)
-       for opt-tag = (list* :option :value cval (when (equal cval value) (list :selected "t")))
+       for opt-tag = `(:option :value ,cval ,@(when (equal cval value) (list :selected "t"))
+                               ,text)
        collect opt-tag into opts
        finally
        (return (write-tag `(:select ,@(get-input-attrs field) ,@opts)))))
@@ -128,7 +129,7 @@
   ((fields :initarg :fields :initform nil :reader form-fields)
    (initials :initarg :init :initform nil :reader form-initials)
    (vars :initform nil :initarg :vars :accessor form-vars)
-   (errors :initform nil :reader form-errors)
+   (errors :initform nil :initarg :errors :reader form-errors)
    (data :initform nil :accessor form-data)
    (boundp :initform nil :accessor form-boundp)
    ))
@@ -143,7 +144,10 @@
   (:method ((form form))
     nil))
 
-(defun full-validate (form)
+(defgeneric full-validate (form)
+  (:documentation "Completely validate form and return errors if any"))
+
+(defmethod full-validate ((form form))
   "Returns nil when no errors."
   ;; validate fields
   (loop for (keyword field) on (form-fields form) by #'cddr
@@ -237,6 +241,93 @@
     (emb:execute-emb
      form-path
      :env (append (form-to-plist form) env))))
+
+(defclass formset ()
+  ((forms :initform nil :reader formset-forms)
+   (form-class :initarg :form :reader formset-form-class)
+   (form-initargs :initarg :initargs :initform nil :reader formset-form-initargs)
+   (errors :initform nil :reader form-errors)
+   (boundp :initform nil :accessor form-boundp)))
+
+(defmethod initialize-instance :after ((formset formset) &key initial (extra 1))
+  (loop with forms
+       for init in initial
+       for form = (spawn-form formset :init init)
+       do (push form forms)
+     finally
+       (when extra
+         (loop repeat extra
+            do (push (spawn-form formset) forms)))
+       (setf (slot-value formset 'forms) (nreverse forms))))
+
+(defun spawn-form (formset &rest args)
+  (apply #'make-instance (formset-form-class formset)
+         (append args (formset-form-initargs formset))))
+
+(defmethod validate ((formset formset)) nil)
+
+(defmethod finalize ((formset formset)) nil)
+
+(defmethod full-validate ((formset formset))
+  (loop for form in (formset-forms formset)
+       for errors = (and (boundp form) (full-validate form))
+       when errors
+       collect errors into form-errors
+       finally (when form-errors
+                 (return-from full-validate form-errors))
+       )
+  (handler-case
+      (progn (validate formset) (finalize formset))
+    (field-error (e)
+      (with-slots (field message) e
+        (with-slots (errors) formset
+          (push message errors)
+          (push nil errors)))))
+  (form-errors formset))
+
+(defmethod form-data ((formset formset))
+  (loop for form in (formset-forms formset)
+       when (boundp form)
+       collect (form-data form)))
+
+(defun bind-formset (formset param-getter)
+  (let ((params (if (listp param-getter) param-getter (funcall param-getter)))
+        (prototype (spawn-form formset)))
+    (multiple-value-bind (form-params n-forms)
+        (loop for (kw field) on (form-fields prototype) by #'cddr
+           for name = (field-name field)
+           for param = (and name (assoc name params :test #'equalp))
+           when param
+           collect (cons kw (cdr param)) into pparams
+           and maximize (length (cdr param)) into mlen
+           finally (return (values pparams mlen)))
+      (loop with forms = (loop repeat n-forms collect (spawn-form formset))
+           for (kw param) in form-params
+           when param
+           do (loop for form in forms
+                 for par in param
+                 for field = (getf (form-fields form) kw)
+                 do (setf (slot-value field 'str-value) par))
+           finally
+           (loop for form in forms
+              do (setf (slot-value form 'boundp) t))
+           (with-slots ((fforms forms) boundp) formset
+             (setf fforms forms boundp t))))))
+
+(defun render-formset (formset &rest rest)
+  (let ((forms (mapcar (lambda (form) (apply #'render-form form rest)) (formset-forms formset))))
+    (if (form-errors formset)
+        (let ((err-form (make-instance 'form :errors (form-errors formset))))
+          (cons (apply #'render-form err-form rest) forms))
+        forms)))
+      
+(defmacro def-formset (class-name form-class &optional superclasses)
+  `(defclass ,class-name ,(or superclasses '(formset))
+     (,@(cond ((listp form-class)
+              `((form-class :initform ',(car form-class))
+                (form-initargs :initform (list ,@(cdr form-class)))))
+             (t `((form-class :initform ',form-class)))))))
+
 
 ;; validator utils
 

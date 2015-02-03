@@ -33,4 +33,12 @@
    :select-field
    :select-choices
    :finalize
-   :hidden-field))
+   :hidden-field
+   :formset
+   :bind-formset
+   :render-formset
+   :def-formset
+   :spawn-form
+   :formset-forms
+   :formset-form-class
+   :formset-form-initargs))
