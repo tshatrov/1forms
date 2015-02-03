@@ -177,9 +177,14 @@
   (form-errors form))
 
 (defmacro process-form (form on-error &body on-success)
-  `(cond ((or (not (form-boundp form)) (full-validate ,form))
-          ,on-error)
-         (t ,@on-success)))
+  (let ((forms (if (listp form) form (list form)))
+        (any-err (gensym "ERR")))
+    `(let ((,any-err nil))
+       ,@(loop for form in forms
+              collect `(when (or (not (form-boundp ,form)) (full-validate ,form))
+                         (setf ,any-err t)))
+       (cond (,any-err ,on-error)
+             (t ,@on-success)))))
 
 (defmacro def-form (class-name superclasses
                     &body field-defs)
@@ -315,10 +320,11 @@
              (setf fforms forms boundp t))))))
 
 (defun render-formset (formset &rest rest)
-  (let ((forms (mapcar (lambda (form) (apply #'render-form form rest)) (formset-forms formset))))
+  (let ((forms (mapcar (lambda (form) (list :form (apply #'render-form form rest)))
+                       (formset-forms formset))))
     (if (form-errors formset)
         (let ((err-form (make-instance 'form :errors (form-errors formset))))
-          (cons (apply #'render-form err-form rest) forms))
+          (cons (list :form (apply #'render-form err-form rest)) forms))
         forms)))
       
 (defmacro def-formset (class-name form-class &optional superclasses)
