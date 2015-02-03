@@ -220,8 +220,8 @@
           )))
 
 (defun bind-form (form param-getter)
-  "param-getter should return alist ((\"param_name\" . \"param_value\"))"
-  (let ((params (funcall param-getter)))
+  "param-getter should be, or return, alist ((\"param_name\" . \"param_value\"))"
+  (let ((params (if (listp param-getter) param-getter (funcall param-getter))))
     (loop for (kw field) on (form-fields form) by #'cddr
          for name = (field-name field)
          for param = (and name (assoc name params :test #'equalp))
