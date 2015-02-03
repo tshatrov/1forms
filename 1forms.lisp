@@ -125,6 +125,15 @@
 (defmethod to-lisp ((field select-field))
   (unless (emptyp (field-str field)) (field-str field)))
 
+
+(defun make-choices (list val-maker txt-maker &key (optional t))
+  (let ((choices (loop for el in list
+                      collect (list (funcall val-maker el)
+                                    (funcall txt-maker el)))))
+    (if optional
+        (cons (list "" "--") choices)
+        choices)))
+
 (defclass form ()
   ((fields :initarg :fields :initform nil :reader form-fields)
    (initials :initarg :init :initform nil :reader form-initials)

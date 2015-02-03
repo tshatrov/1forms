@@ -41,4 +41,5 @@
    :spawn-form
    :formset-forms
    :formset-form-class
-   :formset-form-initargs))
+   :formset-form-initargs
+   :make-choices))
