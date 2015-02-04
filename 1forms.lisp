@@ -248,7 +248,7 @@
          )
     (setf (slot-value form 'boundp) t)))
 
-(defun render-form (form &key (template *default-form-template*) env)
+(defun render-form (form &key (template *default-form-template*) env &allow-other-keys)
   (let* ((form-path (merge-pathnames template *form-template-directory*))
          (emb:*escape-type* :raw)
          (emb:*case-sensitivity* nil))
@@ -328,13 +328,17 @@
            (with-slots ((fforms forms) boundp) formset
              (setf fforms forms boundp t))))))
 
-(defun render-formset (formset &rest rest)
-  (let ((forms (mapcar (lambda (form) (list :form (apply #'render-form form rest)))
-                       (formset-forms formset))))
-    (if (form-errors formset)
-        (let ((err-form (make-instance 'form :errors (form-errors formset))))
-          (cons (list :form (apply #'render-form err-form rest)) forms))
-        forms)))
+(defun render-formset (formset &rest rest &key default-args render-error-args render-default-args)
+  (list
+   :errors (if (form-errors formset)
+               (let ((err-form (make-instance 'form :errors (form-errors formset))))
+                 (apply #'render-form err-form (or render-error-args rest)))
+               "")
+   :forms (mapcar (lambda (form) (list :form (apply #'render-form form rest)))
+                  (formset-forms formset))
+   :default-form (apply #'render-form (apply #'spawn-form formset default-args)
+                        (or render-default-args rest))))
+
       
 (defmacro def-formset (class-name form-class &optional superclasses)
   `(defclass ,class-name ,(or superclasses '(formset))
