@@ -42,4 +42,6 @@
    :formset-forms
    :formset-form-class
    :formset-form-initargs
-   :make-choices))
+   :make-choices
+   :validate-integer-str
+   :validator))

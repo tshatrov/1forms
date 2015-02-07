@@ -355,6 +355,9 @@
 
 ;; validator utils
 
+(defun validator (validator &rest args)
+  (lambda (val) (apply validator val args)))
+
 (defun validate-length (val start &optional end allow-empty)
   (let ((len (length val)))
     (when (and start (< len start) (or (not allow-empty) (> len 0)))
@@ -368,3 +371,13 @@
   (unless (ppcre:scan (if free regex (format nil "^~a$" regex)) val)
     (error 'field-error :message fail-message))
   val)
+
+(defun validate-integer-str (val &key min max)
+  (let ((num (handler-case (parse-integer val)
+               (parse-error () (error 'field-error :message "Not a number")))))
+    (when (and min (< num min))
+      (error 'field-error :message (format nil "Must be at least ~a" min)))
+    (when (and max (< max num))
+      (error 'field-error :message (format nil "Must be at most ~a" max)))
+    num))
+    
