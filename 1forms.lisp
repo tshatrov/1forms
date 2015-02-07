@@ -125,11 +125,16 @@
 (defmethod to-lisp ((field select-field))
   (unless (emptyp (field-str field)) (field-str field)))
 
+(defmethod validate-field ((field select-field) val)
+  (when val
+    (if (assoc val (select-choices field) :test #'equal)
+        val
+        (error 'field-error :message "Invalid choice"))))
 
 (defun make-choices (list val-maker txt-maker &key (optional t))
   (let ((choices (loop for el in list
-                      collect (list (funcall val-maker el)
-                                    (funcall txt-maker el)))))
+                      collect (list (princ-to-string (funcall val-maker el))
+                                    (princ-to-string (funcall txt-maker el))))))
     (if optional
         (cons (list "" "--") choices)
         choices)))
@@ -284,7 +289,7 @@
 
 (defmethod full-validate ((formset formset))
   (loop for form in (formset-forms formset)
-       for errors = (and (boundp form) (full-validate form))
+       for errors = (and (form-boundp form) (full-validate form))
        when errors
        collect errors into form-errors
        finally (when form-errors
@@ -301,7 +306,7 @@
 
 (defmethod form-data ((formset formset))
   (loop for form in (formset-forms formset)
-       when (boundp form)
+       when (form-boundp form)
        collect (form-data form)))
 
 (defun bind-formset (formset param-getter)
@@ -309,14 +314,14 @@
         (prototype (spawn-form formset)))
     (multiple-value-bind (form-params n-forms)
         (loop for (kw field) on (form-fields prototype) by #'cddr
-           for name = (field-name field)
+           for name = (string-right-trim "[]" (field-name field))
            for param = (and name (assoc name params :test #'equalp))
            when param
            collect (cons kw (cdr param)) into pparams
            and maximize (length (cdr param)) into mlen
            finally (return (values pparams mlen)))
       (loop with forms = (loop repeat n-forms collect (spawn-form formset))
-           for (kw param) in form-params
+           for (kw . param) in form-params
            when param
            do (loop for form in forms
                  for par in param
